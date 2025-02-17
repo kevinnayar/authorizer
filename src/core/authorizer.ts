@@ -1,11 +1,14 @@
 import {
+  InternalServerException,
+  UnauthorizedException,
+} from '../errors/authorizer.errors';
+import {
   AuthorizerOpts,
   Entity,
   IAuthorizer,
   SafeValidationResult,
 } from '../types/authorizer.types';
-import { InternalServerException, UnauthorizedException } from './errors';
-import { createCacheKey, getLogger } from './utils';
+import { createCacheKey, getLogger } from '../utils/authorizer.utils';
 
 export async function createAuthorizer<T extends object>(
   opts: AuthorizerOpts<T>,
