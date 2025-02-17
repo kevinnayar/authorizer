@@ -1,3 +1,3 @@
-import { createAuthorizer } from './authorizer';
-export * from './authorizer.types';
+import { createAuthorizer } from './core/authorizer';
+export * from './types/authorizer.types';
 export { createAuthorizer };

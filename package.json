@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts",
     "build": "tsc src/index.ts --outDir dist",
     "example:redis": "tsx src/examples/redis/index.ts",
+    "example:express": "tsx src/examples/express/index.ts",
     "test": "vitest"
   },
   "devDependencies": {

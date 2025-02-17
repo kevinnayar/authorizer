@@ -1,55 +1,10 @@
 import {
   AuthorizerOpts,
   AuthorizerValidationFn,
-  ConsoleMethod,
   Entity,
-} from './authorizer.types';
-
-function createCacheKey(parent: string, child: string) {
-  return `AuthorizerParent:<${parent}>_AuthorizerChild:<${child}>`;
-}
-
-function getLogger(
-  verbose?: boolean,
-): Record<ConsoleMethod, (...args: any[]) => void> {
-  const handleLog = (fn: ConsoleMethod, ...messages: any[]) => {
-    if (verbose) {
-      console[fn]('[Authorizer]', ...messages);
-    }
-  };
-
-  return {
-    log: (...args) => handleLog('log', ...args),
-    error: (...args) => handleLog('error', ...args),
-    warn: (...args) => handleLog('warn', ...args),
-    debug: (...args) => handleLog('debug', ...args),
-    info: (...args) => handleLog('info', ...args),
-    trace: (...args) => handleLog('trace', ...args),
-  };
-}
-
-class UnauthorizedException extends Error {
-  public readonly statusCode: number = 401;
-  public readonly status: string = 'Unauthorized';
-
-  constructor(message: string) {
-    super(message);
-    this.name = 'UnauthorizedException';
-    // Maintains proper stack trace for where error was thrown
-    Error.captureStackTrace(this, this.constructor);
-  }
-
-  public toJSON() {
-    return {
-      error: {
-        name: this.name,
-        message: this.message,
-        statusCode: this.statusCode,
-        status: this.status,
-      },
-    };
-  }
-}
+} from '../types/authorizer.types';
+import { InternalServerException, UnauthorizedException } from './errors';
+import { createCacheKey, getLogger } from './utils';
 
 export async function createAuthorizer<T extends object>(
   opts: AuthorizerOpts<T>,
@@ -86,7 +41,7 @@ export async function createAuthorizer<T extends object>(
       ].join(' ');
 
       logger.error(error);
-      throw new UnauthorizedException(error);
+      throw new InternalServerException(error);
     }
 
     const value = await validator(parent, child);
