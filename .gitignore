@@ -3,6 +3,7 @@
 **/.env
 
 # any node_modules directory
+/dist
 /node_modules
 
 # Logs

@@ -13,7 +13,7 @@ export type AuthorizerValidator<T extends object> = {
 
 export type AuthorizerOpts<T extends object> = {
   validators: AuthorizerValidator<T>[];
-  cache?: MinimalCache;
+  cache?: IMinimalCache;
   verbose?: boolean;
 };
 
@@ -27,7 +27,7 @@ export type SafeValidationResult =
       error: string | Error;
     };
 
-export type IAuthorizer<T extends object> = {
+export interface IAuthorizer<T extends object> {
   validate: (parent: Entity<T>, child: Entity<T>) => Promise<true>;
   safeValidate: (
     parent: Entity<T>,
@@ -40,9 +40,9 @@ export type IAuthorizer<T extends object> = {
   removeFromCache: (parent: Entity<T>, child: Entity<T>) => Promise<void>;
   removeManyFromCache: (entities: [Entity<T>, Entity<T>][]) => Promise<void>;
   clearCache: () => Promise<void>;
-};
+}
 
-export interface MinimalCache {
+export interface IMinimalCache {
   get(key: string): Promise<string | null | undefined>;
   set(key: string, value: string, options?: unknown): Promise<unknown>;
   del(key: string): Promise<unknown>;
