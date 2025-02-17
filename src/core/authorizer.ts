@@ -27,7 +27,7 @@ export async function createAuthorizer<T extends object>(
     validatorMap.set(key, validator);
   }
 
-  const validate = async (parent: Entity<T>, child: Entity<T>) => {
+  async function validate(parent: Entity<T>, child: Entity<T>) {
     const cacheKey = createCacheKey(
       `${parent.key}_${parent.id}`,
       `${child.key}_${child.id}`,
@@ -68,9 +68,9 @@ export async function createAuthorizer<T extends object>(
     }
 
     return value;
-  };
+  }
 
-  const safeValidate = async (parent: Entity<T>, child: Entity<T>) => {
+  async function safeValidate(parent: Entity<T>, child: Entity<T>) {
     try {
       const success = await validate(parent, child);
       return {
@@ -84,9 +84,9 @@ export async function createAuthorizer<T extends object>(
         error,
       } satisfies SafeValidationResult;
     }
-  };
+  }
 
-  const validateMany = async (entities: [Entity<T>, Entity<T>][]) => {
+  async function validateMany(entities: [Entity<T>, Entity<T>][]) {
     const results: true[] = [];
 
     for (let i = 0; i < entities.length; i += 1) {
@@ -96,9 +96,9 @@ export async function createAuthorizer<T extends object>(
     }
 
     return results;
-  };
+  }
 
-  const safeValidateMany = async (entities: [Entity<T>, Entity<T>][]) => {
+  async function safeValidateMany(entities: [Entity<T>, Entity<T>][]) {
     const results: SafeValidationResult[] = [];
 
     for (let i = 0; i < entities.length; i += 1) {
@@ -108,9 +108,9 @@ export async function createAuthorizer<T extends object>(
     }
 
     return results;
-  };
+  }
 
-  const removeFromCache = async (parent: Entity<T>, child: Entity<T>) => {
+  async function removeFromCache(parent: Entity<T>, child: Entity<T>) {
     if (cache) {
       logger.log(
         `Deleting cache for ${parent.key}:${parent.id} and ${child.key}:${child.id}`,
@@ -122,15 +122,15 @@ export async function createAuthorizer<T extends object>(
       await cache.del(cacheKey);
       logger.log(`Deleted cache for ${cacheKey}`);
     }
-  };
+  }
 
-  const removeManyFromCache = async (entities: [Entity<T>, Entity<T>][]) => {
+  async function removeManyFromCache(entities: [Entity<T>, Entity<T>][]) {
     for (const [parent, child] of entities) {
       await removeFromCache(parent, child);
     }
-  };
+  }
 
-  const clearCache = async () => {
+  async function clearCache() {
     if (cache) {
       logger.log('Flushing all cache');
       if (cache.flushAll) {
@@ -140,7 +140,7 @@ export async function createAuthorizer<T extends object>(
       }
       logger.log('Flushed all cache');
     }
-  };
+  }
 
   return {
     validate,
