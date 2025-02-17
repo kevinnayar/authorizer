@@ -1,6 +1,9 @@
-export interface MinimalRedisClient {
-  get: (key: string) => Promise<string | null>;
-  set: (key: string, value: string, options?: { EX?: number }) => Promise<void>;
+export interface MinimalCache {
+  get(key: string): Promise<string | null | undefined>;
+  set(key: string, value: string, options?: unknown): Promise<unknown>;
+  del(key: string): Promise<unknown>;
+  flushAll?(): Promise<unknown>;
+  clear?(): Promise<unknown>;
 }
 
 export type Entity<T extends object> = T & {
@@ -23,11 +26,11 @@ export type AuthorizerValidator<T extends object> = {
 
 export type AuthorizerOpts<T extends object> = {
   validators: AuthorizerValidator<T>[];
-  cache?: MinimalRedisClient;
+  cache?: MinimalCache;
   verbose?: boolean;
 };
 
-export type ConsoleMethod =
+export type LoggerMethod =
   | 'log'
   | 'error'
   | 'warn'

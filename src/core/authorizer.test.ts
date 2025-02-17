@@ -1,7 +1,7 @@
+import { MinimalCache } from 'src/types/authorizer.types';
 import { describe, expect, test } from 'vitest';
 import { exampleEntities, exampleValidators } from '../examples/data';
 import { getRedisClient } from '../examples/redis/redis';
-import { MinimalRedisClient } from '../types/authorizer.types';
 import { createAuthorizer } from './authorizer';
 
 describe('authorizer', async () => {
@@ -9,8 +9,9 @@ describe('authorizer', async () => {
     validators: exampleValidators,
   });
 
+  const cache = await getRedisClient();
   const authorizerWithCache = await createAuthorizer({
-    cache: (await getRedisClient()) as unknown as MinimalRedisClient,
+    cache: cache as MinimalCache,
     validators: exampleValidators,
   });
 

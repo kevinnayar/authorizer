@@ -1,9 +1,9 @@
-import { createAuthorizer, type MinimalRedisClient } from '../../index';
+import { createAuthorizer, type MinimalCache } from '../../index';
 import { exampleEntities, exampleValidators } from '../data';
 import { getRedisClient } from './redis';
 
 async function main() {
-  const cache = (await getRedisClient()) as unknown as MinimalRedisClient;
+  const cache = (await getRedisClient()) as MinimalCache;
   const authorizer = await createAuthorizer({
     cache,
     verbose: true,

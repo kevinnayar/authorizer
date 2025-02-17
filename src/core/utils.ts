@@ -1,4 +1,4 @@
-import { ConsoleMethod } from '../types/authorizer.types';
+import { LoggerMethod } from '../types/authorizer.types';
 
 export function createCacheKey(parent: string, child: string) {
   return `AuthorizerParent:<${parent}>_AuthorizerChild:<${child}>`;
@@ -6,8 +6,8 @@ export function createCacheKey(parent: string, child: string) {
 
 export function getLogger(
   verbose?: boolean,
-): Record<ConsoleMethod, (...args: any[]) => void> {
-  const handleLog = (fn: ConsoleMethod, ...messages: any[]) => {
+): Record<LoggerMethod, (...args: any[]) => void> {
+  const handleLog = (fn: LoggerMethod, ...messages: any[]) => {
     if (verbose) {
       console[fn]('[Authorizer]', ...messages);
     }

@@ -77,8 +77,36 @@ export async function createAuthorizer<T extends object>(
     return results;
   };
 
+  const deleteFromCache = async (parent: Entity<T>, child: Entity<T>) => {
+    if (cache) {
+      logger.log(
+        `Deleting cache for ${parent.key}:${parent.id} and ${child.key}:${child.id}`,
+      );
+      const cacheKey = createCacheKey(
+        `${parent.key}_${parent.id}`,
+        `${child.key}_${child.id}`,
+      );
+      await cache.del(cacheKey);
+      logger.log(`Deleted cache for ${cacheKey}`);
+    }
+  };
+
+  const clearCache = async () => {
+    if (cache) {
+      logger.log('Flushing all cache');
+      if (cache.flushAll) {
+        await cache.flushAll();
+      } else if (cache.clear) {
+        await cache.clear();
+      }
+      logger.log('Flushed all cache');
+    }
+  };
+
   return {
     validate,
     validateMany,
+    deleteFromCache,
+    clearCache,
   };
 }
