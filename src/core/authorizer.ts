@@ -1,18 +1,22 @@
 import {
   AuthorizerOpts,
-  AuthorizerValidationFn,
   Entity,
+  IAuthorizer,
+  SafeValidationResult,
 } from '../types/authorizer.types';
 import { InternalServerException, UnauthorizedException } from './errors';
 import { createCacheKey, getLogger } from './utils';
 
 export async function createAuthorizer<T extends object>(
   opts: AuthorizerOpts<T>,
-) {
+): Promise<IAuthorizer<T>> {
   const logger = getLogger(opts.verbose);
   const cache = opts.cache || null;
   const CACHED_TOKEN = '__CACHED_TOKEN__';
-  const validatorMap: Map<string, AuthorizerValidationFn<T>> = new Map();
+  const validatorMap: Map<
+    string,
+    (parent: Entity<T>, child: Entity<T>) => Promise<boolean>
+  > = new Map();
 
   for (const { parent, child, validator } of opts.validators) {
     const key = createCacheKey(parent, child);
@@ -63,10 +67,24 @@ export async function createAuthorizer<T extends object>(
     return value;
   };
 
-  const validateMany = async (
-    entities: [Entity<T>, Entity<T>][],
-  ): Promise<boolean[]> => {
-    const results: boolean[] = [];
+  const safeValidate = async (parent: Entity<T>, child: Entity<T>) => {
+    try {
+      const success = await validate(parent, child);
+      return {
+        success,
+        error: null,
+      } satisfies SafeValidationResult;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      return {
+        success: false,
+        error,
+      } satisfies SafeValidationResult;
+    }
+  };
+
+  const validateMany = async (entities: [Entity<T>, Entity<T>][]) => {
+    const results: true[] = [];
 
     for (let i = 0; i < entities.length; i += 1) {
       const [parent, child] = entities[i];
@@ -77,7 +95,19 @@ export async function createAuthorizer<T extends object>(
     return results;
   };
 
-  const deleteFromCache = async (parent: Entity<T>, child: Entity<T>) => {
+  const safeValidateMany = async (entities: [Entity<T>, Entity<T>][]) => {
+    const results: SafeValidationResult[] = [];
+
+    for (let i = 0; i < entities.length; i += 1) {
+      const [parent, child] = entities[i];
+      const result = await safeValidate(parent, child);
+      results.push(result);
+    }
+
+    return results;
+  };
+
+  const removeFromCache = async (parent: Entity<T>, child: Entity<T>) => {
     if (cache) {
       logger.log(
         `Deleting cache for ${parent.key}:${parent.id} and ${child.key}:${child.id}`,
@@ -88,6 +118,12 @@ export async function createAuthorizer<T extends object>(
       );
       await cache.del(cacheKey);
       logger.log(`Deleted cache for ${cacheKey}`);
+    }
+  };
+
+  const removeManyFromCache = async (entities: [Entity<T>, Entity<T>][]) => {
+    for (const [parent, child] of entities) {
+      await removeFromCache(parent, child);
     }
   };
 
@@ -105,8 +141,11 @@ export async function createAuthorizer<T extends object>(
 
   return {
     validate,
+    safeValidate,
     validateMany,
-    deleteFromCache,
+    safeValidateMany,
+    removeFromCache,
+    removeManyFromCache,
     clearCache,
   };
 }
