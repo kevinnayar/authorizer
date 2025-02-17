@@ -28,6 +28,29 @@ function getLogger(
   };
 }
 
+class UnauthorizedException extends Error {
+  public readonly statusCode: number = 401;
+  public readonly status: string = 'Unauthorized';
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnauthorizedException';
+    // Maintains proper stack trace for where error was thrown
+    Error.captureStackTrace(this, this.constructor);
+  }
+
+  public toJSON() {
+    return {
+      error: {
+        name: this.name,
+        message: this.message,
+        statusCode: this.statusCode,
+        status: this.status,
+      },
+    };
+  }
+}
+
 export async function createAuthorizer<T extends object>(
   opts: AuthorizerOpts<T>,
 ) {
@@ -63,7 +86,7 @@ export async function createAuthorizer<T extends object>(
       ].join(' ');
 
       logger.error(error);
-      throw new Error(error);
+      throw new UnauthorizedException(error);
     }
 
     const value = await validator(parent, child);
@@ -75,7 +98,7 @@ export async function createAuthorizer<T extends object>(
       ].join(' ');
 
       logger.error(error);
-      throw new Error(error);
+      throw new UnauthorizedException(error);
     }
 
     if (cache) {

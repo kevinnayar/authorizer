@@ -5,7 +5,7 @@ import {
   BaseEntity,
   MinimalRedisClient,
 } from './authorizer.types';
-import { getRedisClient } from './redis';
+import { getRedisClient } from './examples/redis/redis';
 
 const entities = {
   projects: {

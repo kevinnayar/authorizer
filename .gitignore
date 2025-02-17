@@ -1,5 +1,8 @@
 .env
+# any .env file in any subdirectory
+**/.env
 
+# any node_modules directory
 /node_modules
 
 # Logs
