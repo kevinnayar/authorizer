@@ -1,10 +1,14 @@
-import { LoggerMethod } from '../types/authorizer.types';
+import { LoggerMethod } from './types';
 
-export function createCacheKey(parent: string, child: string) {
+export function createCompositeKey(parent: string, child: string) {
+  if (!parent || !child) {
+    throw new Error('Parent and child are required to create a composite key');
+  }
+
   return `AuthorizerParent:<${parent}>_AuthorizerChild:<${child}>`;
 }
 
-export function getLogger(
+export function getConditionalLogger(
   verbose?: boolean,
 ): Record<LoggerMethod, (...args: any[]) => void> {
   const handleLog = (fn: LoggerMethod, ...messages: any[]) => {

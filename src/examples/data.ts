@@ -1,6 +1,12 @@
-import { AuthorizerValidator, BaseEntity } from '../types/authorizer.types';
+import { AuthorizerValidator, BaseEntity } from '../core/types';
 
 export const exampleEntities = {
+  teams: {
+    one: {
+      key: 'teams',
+      id: '3c8f54d8-70cf-41f4-aa2b-8170dd15abd1',
+    },
+  },
   projects: {
     one: {
       key: 'projects',
@@ -23,6 +29,14 @@ export const exampleEntities = {
   },
 };
 
+const teamHasProject = async (
+  p: BaseEntity,
+  c: BaseEntity,
+): Promise<boolean> => {
+  const { teams, projects } = exampleEntities;
+  return p.id === teams.one.id && c.id === projects.one.id;
+};
+
 const projectHasTask = async (
   p: BaseEntity,
   c: BaseEntity,
@@ -35,6 +49,11 @@ const projectHasTask = async (
 };
 
 export const exampleValidators = [
+  {
+    parent: 'teams',
+    child: 'projects',
+    validator: teamHasProject,
+  },
   {
     parent: 'projects',
     child: 'tasks',

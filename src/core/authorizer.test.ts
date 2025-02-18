@@ -1,49 +1,50 @@
-import { IMinimalCache } from 'src/types/authorizer.types';
 import { describe, expect, test } from 'vitest';
 import { exampleEntities, exampleValidators } from '../examples/data';
-import { getRedisClient } from '../examples/redis/redis';
 import { createAuthorizer } from './authorizer';
+import { UnauthorizedException } from './errors';
 
-describe('authorizer', async () => {
-  const authorizerNoCache = await createAuthorizer({
-    validators: exampleValidators,
-  });
-
-  const cache = await getRedisClient();
-  const authorizerWithCache = await createAuthorizer({
-    cache: cache as IMinimalCache,
-    validators: exampleValidators,
-  });
-
+describe('authorizer test suite', async () => {
+  const authorizer = await createAuthorizer({ validators: exampleValidators });
   const { projects, tasks } = exampleEntities;
 
-  test('validate: with cache', async () => {
+  test('authorizer.validate', async () => {
+    await expect(authorizer.validate(projects.one, tasks.one)).resolves.toBe(
+      true,
+    );
     await expect(
-      authorizerWithCache.validate(projects.one, tasks.one),
-    ).resolves.toBe(true);
-    await expect(
-      authorizerWithCache.validate(projects.one, tasks.two),
+      authorizer.validate(projects.one, tasks.two),
     ).rejects.toThrow();
   });
 
-  test('validate: no cache', async () => {
+  test('authorizer.safeValidate', async () => {
     await expect(
-      authorizerNoCache.validate(projects.one, tasks.one),
-    ).resolves.toBe(true);
+      authorizer.safeValidate(projects.one, tasks.one),
+    ).resolves.toEqual({
+      success: true,
+      error: null,
+    });
     await expect(
-      authorizerNoCache.validate(projects.one, tasks.two),
-    ).rejects.toThrow();
+      authorizer.safeValidate(projects.one, tasks.two),
+    ).resolves.toEqual({
+      success: false,
+      error: new UnauthorizedException(
+        [
+          'Parent entity "projects": a1dcb2fa-2caa-4eca-8aa2-9cfc43158013 does not',
+          'have access to child entity "tasks": 72566e3b-f09f-43cb-8ff3-724529d7e629.',
+        ].join(' '),
+      ),
+    });
   });
 
-  test('validateMany: with cache', async () => {
-    const resultsPass = await authorizerWithCache.validateMany([
+  test('authorizer.validateMany', async () => {
+    const resultsPass = await authorizer.validateMany([
       [projects.one, tasks.one], // good
       [projects.one, tasks.three], // good
     ]);
     expect(resultsPass).toEqual([true, true]);
 
     await expect(
-      authorizerWithCache.validateMany([
+      authorizer.validateMany([
         [projects.one, tasks.one], // good
         [projects.one, tasks.two], // bad
         [projects.one, tasks.three], // good
@@ -51,19 +52,33 @@ describe('authorizer', async () => {
     ).rejects.toThrow();
   });
 
-  test('validateMany: no cache', async () => {
-    const resultsPass = await authorizerNoCache.validateMany([
+  test('authorizer.safeValidateMany', async () => {
+    const resultsPass = await authorizer.safeValidateMany([
       [projects.one, tasks.one], // good
       [projects.one, tasks.three], // good
     ]);
-    expect(resultsPass).toEqual([true, true]);
+    expect(resultsPass).toEqual([
+      { error: null, success: true },
+      { error: null, success: true },
+    ]);
 
-    await expect(
-      authorizerNoCache.validateMany([
-        [projects.one, tasks.one], // good
-        [projects.one, tasks.two], // bad
-        [projects.one, tasks.three], // good
-      ]),
-    ).rejects.toThrow();
+    const resultsFail = await authorizer.safeValidateMany([
+      [projects.one, tasks.one], // good
+      [projects.one, tasks.two], // bad
+      [projects.one, tasks.three], // good
+    ]);
+    expect(resultsFail).toEqual([
+      { error: null, success: true },
+      {
+        error: new UnauthorizedException(
+          [
+            'Parent entity "projects": a1dcb2fa-2caa-4eca-8aa2-9cfc43158013 does not',
+            'have access to child entity "tasks": 72566e3b-f09f-43cb-8ff3-724529d7e629.',
+          ].join(' '),
+        ),
+        success: false,
+      },
+      { error: null, success: true },
+    ]);
   });
 });

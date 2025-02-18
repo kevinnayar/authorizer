@@ -1,19 +1,16 @@
-import {
-  InternalServerException,
-  UnauthorizedException,
-} from '../errors/authorizer.errors';
+import { InternalServerException, UnauthorizedException } from './errors';
 import {
   AuthorizerOpts,
   Entity,
   IAuthorizer,
   SafeValidationResult,
-} from '../types/authorizer.types';
-import { createCacheKey, getLogger } from '../utils/authorizer.utils';
+} from './types';
+import { createCompositeKey, getConditionalLogger } from './utils';
 
 export async function createAuthorizer<T extends object>(
   opts: AuthorizerOpts<T>,
 ): Promise<IAuthorizer<T>> {
-  const logger = getLogger(opts.verbose);
+  const logger = getConditionalLogger(opts.verbose);
   const cache = opts.cache || null;
   const CACHED_TOKEN = '__CACHED_TOKEN__';
   const validatorMap: Map<
@@ -22,13 +19,13 @@ export async function createAuthorizer<T extends object>(
   > = new Map();
 
   for (const { parent, child, validator } of opts.validators) {
-    const key = createCacheKey(parent, child);
+    const key = createCompositeKey(parent, child);
     logger.log(`Saving validator method for ${key}`);
     validatorMap.set(key, validator);
   }
 
   async function validate(parent: Entity<T>, child: Entity<T>) {
-    const cacheKey = createCacheKey(
+    const cacheKey = createCompositeKey(
       `${parent.key}_${parent.id}`,
       `${child.key}_${child.id}`,
     );
@@ -38,7 +35,7 @@ export async function createAuthorizer<T extends object>(
       return true;
     }
 
-    const key = createCacheKey(parent.key, child.key);
+    const key = createCompositeKey(parent.key, child.key);
     const validator = validatorMap.get(key);
 
     if (typeof validator !== 'function') {
@@ -115,7 +112,7 @@ export async function createAuthorizer<T extends object>(
       logger.log(
         `Deleting cache for ${parent.key}:${parent.id} and ${child.key}:${child.id}`,
       );
-      const cacheKey = createCacheKey(
+      const cacheKey = createCompositeKey(
         `${parent.key}_${parent.id}`,
         `${child.key}_${child.id}`,
       );
