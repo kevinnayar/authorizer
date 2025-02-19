@@ -1,36 +1,36 @@
 import { describe, expect, test } from 'vitest';
-import { exampleEntities, exampleValidators } from '../examples/data';
+import { exampleValidators, mockDB } from '../examples/data';
 import { createAuthorizer } from './authorizer';
 import { UnauthorizedException } from './errors';
 
 describe('authorizer test suite', async () => {
   const authorizer = await createAuthorizer({ validators: exampleValidators });
-  const { projects, tasks } = exampleEntities;
+  const { teams, projects, tasks } = mockDB.getData();
 
   test('authorizer.validate', async () => {
-    await expect(authorizer.validate(projects.one, tasks.one)).resolves.toBe(
-      true,
-    );
     await expect(
-      authorizer.validate(projects.one, tasks.two),
+      authorizer.validate(teams.Engineering, projects.backendAPI),
+    ).resolves.toBe(true);
+    await expect(
+      authorizer.validate(teams.Engineering, projects.brandSystem),
     ).rejects.toThrow();
   });
 
   test('authorizer.safeValidate', async () => {
     await expect(
-      authorizer.safeValidate(projects.one, tasks.one),
+      authorizer.safeValidate(teams.Engineering, projects.backendAPI),
     ).resolves.toEqual({
       success: true,
       error: null,
     });
     await expect(
-      authorizer.safeValidate(projects.one, tasks.two),
+      authorizer.safeValidate(teams.Engineering, projects.brandSystem),
     ).resolves.toEqual({
       success: false,
       error: new UnauthorizedException(
         [
-          'Parent entity "projects": a1dcb2fa-2caa-4eca-8aa2-9cfc43158013 does not',
-          'have access to child entity "tasks": 72566e3b-f09f-43cb-8ff3-724529d7e629.',
+          'Parent entity "teams": 3c8f54d8-70cf-41f4-aa2b-8170dd15abd1 does not',
+          'have access to child entity "projects": bfa3fc5f-5593-4bbe-8725-ad4224283994.',
         ].join(' '),
       ),
     });
@@ -38,24 +38,23 @@ describe('authorizer test suite', async () => {
 
   test('authorizer.validateMany', async () => {
     const resultsPass = await authorizer.validateMany([
-      [projects.one, tasks.one], // good
-      [projects.one, tasks.three], // good
+      [teams.Engineering, projects.backendAPI],
+      [projects.backendAPI, tasks.apiAuth],
     ]);
     expect(resultsPass).toEqual([true, true]);
 
     await expect(
       authorizer.validateMany([
-        [projects.one, tasks.one], // good
-        [projects.one, tasks.two], // bad
-        [projects.one, tasks.three], // good
+        [teams.Engineering, projects.backendAPI],
+        [projects.backendAPI, tasks.colorSystem],
       ]),
     ).rejects.toThrow();
   });
 
   test('authorizer.safeValidateMany', async () => {
     const resultsPass = await authorizer.safeValidateMany([
-      [projects.one, tasks.one], // good
-      [projects.one, tasks.three], // good
+      [teams.Engineering, projects.backendAPI],
+      [projects.backendAPI, tasks.apiAuth],
     ]);
     expect(resultsPass).toEqual([
       { error: null, success: true },
@@ -63,22 +62,20 @@ describe('authorizer test suite', async () => {
     ]);
 
     const resultsFail = await authorizer.safeValidateMany([
-      [projects.one, tasks.one], // good
-      [projects.one, tasks.two], // bad
-      [projects.one, tasks.three], // good
+      [teams.Engineering, projects.backendAPI],
+      [projects.backendAPI, tasks.colorSystem],
     ]);
     expect(resultsFail).toEqual([
       { error: null, success: true },
       {
         error: new UnauthorizedException(
           [
-            'Parent entity "projects": a1dcb2fa-2caa-4eca-8aa2-9cfc43158013 does not',
-            'have access to child entity "tasks": 72566e3b-f09f-43cb-8ff3-724529d7e629.',
+            'Parent entity "projects": b2cfe39d-19f9-4549-aba0-b713841f5109 does not',
+            'have access to child entity "tasks": 73eb6055-29cf-42d8-aa3e-bbe826cb9016.',
           ].join(' '),
         ),
         success: false,
       },
-      { error: null, success: true },
     ]);
   });
 });

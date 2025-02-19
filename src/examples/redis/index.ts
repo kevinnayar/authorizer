@@ -1,5 +1,5 @@
 import { createAuthorizer, type IMinimalCache } from '../../index';
-import { exampleEntities, exampleValidators } from '../data';
+import { exampleValidators, mockDB } from '../data';
 import { getRedisClient } from './redis';
 
 async function main() {
@@ -10,24 +10,28 @@ async function main() {
     validators: exampleValidators,
   });
 
-  const { projects, tasks } = exampleEntities;
+  const { teams, projects, tasks } = mockDB.getData();
 
-  console.log('\nSHOULD PASS => Testing project.one with tasks.one');
-  await authorizer.validate(projects.one, tasks.one);
+  console.log('\nSHOULD PASS...\n');
+  await authorizer.validateMany([
+    [teams.Engineering, projects.backendAPI],
+    [projects.backendAPI, tasks.apiAuth],
+  ]);
+  console.log('\nPASSED!!!!\n');
 
-  console.log('\nSHOULD FAIL => Testing project.one with tasks.two');
+  console.log('\nSHOULD FAIL...\n');
   try {
-    await authorizer.validate(projects.one, tasks.two);
+    await authorizer.validateMany([
+      [teams.Engineering, projects.backendAPI],
+      [projects.backendAPI, tasks.typography],
+    ]);
   } catch (e) {
     console.error(e);
+    console.log('\nFAILED!!!\n');
   }
 }
 
-main()
-  .then(() => {
-    console.log('done');
-  })
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

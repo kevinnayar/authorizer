@@ -20,14 +20,6 @@ async function getAuthorizerSingleton() {
   return authorizer;
 }
 
-/**
- * SHOULD PASS
- * curl http://localhost:3000/teams/3c8f54d8-70cf-41f4-aa2b-8170dd15abd1/projects/a1dcb2fa-2caa-4eca-8aa2-9cfc43158013/tasks/71230aca-7483-492e-856b-7d867d0eb480
- *
- * SHOULD FAIL
- * curl http://localhost:3000/teams/3c8f54d8-70cf-41f4-aa2b-8170dd15abd1/projects/a1dcb2fa-2caa-4eca-8aa2-9cfc43158013/tasks/72566e3b-f09f-43cb-8ff3-724529d7e629
- */
-
 app.get(
   '/teams/:teamId/projects/:projectId/tasks/:taskId',
   async (req: Request, res: Response) => {
